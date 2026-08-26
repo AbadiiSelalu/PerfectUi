@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 local event = ReplicatedStorage:WaitForChild("rEvents", 5) and ReplicatedStorage.rEvents:WaitForChild("tradingEvent", 5)
-Local ALLOWED_DISPLAY_NAMES = {
+local ALLOWED_DISPLAY_NAMES = {
     "Zor_Neon1",
     "Zor_Neon2",
     "Zor_Neon3",
